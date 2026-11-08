@@ -1,0 +1,90 @@
+{
+  "manifest_version": "0.3",
+  "name": "sap-notes",
+  "display_name": "SAP Notes (Go)",
+  "version": "0.1.2",
+  "description": "SAP Notes and KBAs from me.sap.com: search for your release, read, correction code, SNOTE file and PDF. Through your session in the built-in browser, or its own background Chrome/Edge signed in with your SAP account.",
+  "long_description": "A single self-contained Go binary. One read-only tool, sap_notes, with actions search, read, corrections, download and status. Two modes. browser (default): the server never contacts SAP; every action returns a short script that Claude runs on a me.sap.com tab of the built-in browser, where you are signed in. chrome: the server starts its own Chrome or Edge in the background with a separate profile, signs in with the SAP user and password from the settings, and saves .SAR files and PDFs straight into a folder; with two-factor authentication it opens a window for you to sign in.",
+  "author": {
+    "name": "Georgy Osipov",
+    "url": "https://github.com/osipovgoga33"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/osipovgoga33/sap-notes-mcp"
+  },
+  "homepage": "https://github.com/osipovgoga33/sap-notes-mcp",
+  "server": {
+    "type": "binary",
+    "entry_point": "server/run.sh",
+    "mcp_config": {
+      "command": "/bin/sh",
+      "args": [
+        "${__dirname}/server/run.sh"
+      ],
+      "platform_overrides": {
+        "win32": {
+          "command": "${__dirname}/server/sap-notes.exe",
+          "args": []
+        }
+      },
+      "env": {
+        "SAP_NOTES_MODE": "${user_config.mode}",
+        "SAP_USERNAME": "${user_config.username}",
+        "SAP_PASSWORD": "${user_config.password}",
+        "SAP_NOTES_DOWNLOAD_DIR": "${user_config.download_dir}"
+      }
+    }
+  },
+  "tools": [
+    {
+      "name": "sap_notes",
+      "description": "SAP Notes and KBAs (actions: search, read, corrections, download, status)"
+    }
+  ],
+  "keywords": [
+    "sap",
+    "sap notes",
+    "kba",
+    "s4hana",
+    "abap",
+    "snote"
+  ],
+  "license": "MIT",
+  "compatibility": {
+    "platforms": [
+      "darwin",
+      "win32",
+      "linux"
+    ]
+  },
+  "user_config": {
+    "mode": {
+      "type": "string",
+      "title": "Mode",
+      "description": "browser — scripts for the built-in browser of Claude Desktop, no credentials; chrome — own background Chrome/Edge with the SAP user below.",
+      "default": "browser",
+      "required": false
+    },
+    "username": {
+      "type": "string",
+      "title": "SAP user (chrome mode)",
+      "description": "S-user or e-mail used on accounts.sap.com.",
+      "required": false
+    },
+    "password": {
+      "type": "string",
+      "title": "SAP password (chrome mode)",
+      "description": "Kept in the system keychain by Claude Desktop. Leave empty to sign in by hand in a browser window.",
+      "sensitive": true,
+      "required": false
+    },
+    "download_dir": {
+      "type": "directory",
+      "title": "Download folder (chrome mode)",
+      "description": ".SAR files and PDFs go here.",
+      "default": "${HOME}/Downloads/SAP Notes",
+      "required": false
+    }
+  }
+}
