@@ -1,0 +1,44 @@
+name: release
+# A release is published by itself when a new version reaches main (serverVersion in main.go):
+# if release vX.Y.Z does not exist yet — tests, build, release with a tag. If it exists — nothing.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: release
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Version
+        id: v
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ver="$(sed -n 's/.*serverVersion *= *"\(.*\)".*/\1/p' main.go)"
+          [ -n "$ver" ] || { echo "serverVersion not found in main.go"; exit 1; }
+          echo "tag=v$ver" >> "$GITHUB_OUTPUT"
+          if gh release view "v$ver" >/dev/null 2>&1; then
+            echo "release v$ver already exists — nothing to do"
+            echo "new=false" >> "$GITHUB_OUTPUT"
+          else
+            grep -q "\"version\": \"$ver\"" mcpb/manifest.json || { echo "mcpb/manifest.json version differs from $ver"; exit 1; }
+            echo "new=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-go@v5
+        if: steps.v.outputs.new == 'true'
+        with:
+          go-version-file: go.mod
+      - name: Build
+        if: steps.v.outputs.new == 'true'
+        run: bash build.sh
+      - name: Publish
+        if: steps.v.outputs.new == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${{ steps.v.outputs.tag }}" dist/* --target "$GITHUB_SHA" --title "${{ steps.v.outputs.tag }}" --generate-notes
