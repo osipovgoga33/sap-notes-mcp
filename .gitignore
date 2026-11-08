@@ -1,0 +1,5 @@
+dist/
+/sap-notes
+/sap-notes.exe
+*.local*
+.env
